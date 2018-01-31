@@ -1,0 +1,107 @@
+#+TITLE: Sleep Well/handmade-clojure planning document
+#+AUTHOR: Joshua Suskalo
+#+DATE: January 25th, 2018
+#+EMAIL: Joshua@Suskalo.org
+#+LANGUAGE: en
+
+#+OPTIONS: toc:3
+
+* Game Design
+  The game is currently planned to be the game Cassie and I have planned on before, "Sleep Well"
+* Art Design
+* Sound Design
+* Game Development
+** Architecture
+*** Entity/Component System
+**** Example Usage
+#+BEGIN_SRC clojure Defining components
+(defcomponent health-comp [num] number?)
+
+(defcomponent player-input [x y jump]
+        (s/keys :req-un [::x ::y ::jump])
+        {:x 0 :y 0 :jump false})
+#+END_SRC
+#+BEGIN_SRC clojure Registering entities
+(register-entity (create-health-comp 5)
+                 (create-position 2 2)
+                 (create-image-texture (sprite "Monster.png")))
+
+(register-entity (create-player-input)
+                 (create-position 0 0)
+                 (create-image-texture (sprite "Player.png")))
+#+END_SRC
+#+BEGIN_SRC clojure Defining systems
+(defsystem damage-over-time
+  :on-update
+  [:health-comp]
+  (fn [entity-id health]
+      (update-component-state! health dec)))
+
+(defsystem player-movement
+  :on-update
+  [:player-input :position]
+  (fn [entity-id input position]
+    (let [x (:x input)
+          y (:y input)]
+      (update-component-state! :position (:id position) move x y)))
+
+(defsystem render-sprites
+  :post-update
+  [:image-texture]
+  (fn [entity-id texture] ...))
+
+(defsystem kill-all
+  :on-call
+  [:health-comp]
+  (fn [entity-id health]
+    (destroy-entity! entity-id)))
+#+END_SRC
+**** Internal Structure
+***** Systems
+
+     Systems run over either all entities, or components of a specific set of types. When running over a
+     set of types,  it selects the shortest list of entities from the component types, and then iterates
+     over them,  filtering by only the entities which have the other required components.  This requires
+     minimal iteration and makes use of the hashmap lookup speed granted for looking up entities.
+
+     Systems are kicked off by a simple function call, and some systems are put in a near-infinite loop.
+     Systems are permitted to fire off other systems, however in these cases the functions that are used
+     to fire off the other systems should do so concurrently and return immediately to prevent the first
+     system from being blocked.
+***** Entities
+      
+      Entities are simple unique ids, generated for each entity to identify them. Once you can
+      identify an entity, all its data and associated behaviour can be found in components and
+      the systems that operate on them.
+***** Components
+
+      Components are where all the data for the entire game's high-level systems will be stored.
+      Systems can operate over components.
+
+      A component has several parts,  a component id, which is a namespaced keyword to uniquely
+      identify it by name, and a spec (tied to the same namespaced keyword), which declares the
+      data which will be stored inside the component.
+***** Data
+
+     Internal storage will be as follows:
+      - An atom which is simply a list of all entity ids
+      - An atom which maps entity ids to component ids and component data ids
+        - This atom should have a two-way mapping, from entities to components, and vice-versa
+            (Maybe don't have it two way, and only do it as a mapping from components to entities?
+             Having it be two way can make it more efficient though for systems to do lookups.)
+      - An atom which maps from component ids to refs that store component data
+        - A ref per component type (stored in the above atom) which maps component data ids to data stored
+***** Assemblages
+
+     Assemblages or entity-templates are mappings of template-ids to lists of components and their initial
+     data, such that a generic method could be created to take an assemblage and return an entity with all
+     the required components and initial data.
+
+*** Physics
+*** Renderer
+
+    The renderer should be using recent OpenGL features so that GLSL can be used instead of software
+    rendering.  OpenGL 4 should most  likely be the feature set that's used,  though I can pick what
+    subversion later.
+** Tasks
+
