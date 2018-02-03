@@ -78,7 +78,8 @@
      [org.clojure/core.async "0.4.474"]
      [com.rpl/specter "1.1.0"]
      [net.mikera/core.matrix "0.61.0"]
-     [net.mikera/vectorz-clj "0.47.0"]]
+     [net.mikera/vectorz-clj "0.47.0"]
+     [org.suskeyhose/imports "1.5.0-SNAPSHOT"]]
    (lwjgl-deps-with-natives)))
 
 (defproject handmade-clojure "0.1.0"

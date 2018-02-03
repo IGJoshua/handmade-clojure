@@ -1,10 +1,19 @@
 (ns handmade-clojure.rendering.mesh
   (:require [handmade-clojure.resource :refer [dispose with-dispose]]
-            [clojure.spec.alpha :as s])
+            [clojure.spec.alpha :as s]
+            [org.suskeyhose.imports :refer [import-static-all]])
   (:import [org.lwjgl.opengl GL GL30 GL20 GL15 GL11]
            [java.nio FloatBuffer]
            [org.lwjgl.system MemoryUtil]
            [org.lwjgl BufferUtils]))
+
+(import-static-all org.lwjgl.opengl.GL
+                   org.lwjgl.opengl.GL11
+                   org.lwjgl.opengl.GL15
+                   org.lwjgl.opengl.GL20
+                   org.lwjgl.opengl.GL30
+                   org.lwjgl.system.MemoryUtil
+                   org.lwjgl.BufferUtils)
 
 (s/def ::vao int?)
 (s/def ::vbo int?)
@@ -32,27 +41,27 @@
 (defmethod dispose :memory
   [_ m]
   (when-not (nil? m)
-    (MemoryUtil/memFree m)))
+    (memFree m)))
 
 (defn create-mesh
   [vertices indices colors]
-  (let [vert-buffer (MemoryUtil/memAllocFloat (count vertices))
+  (let [vert-buffer (memAllocFloat (count vertices))
         vert-count (/ (count vertices) 3)
         vert-array (if (float-array? vertices)
                      vertices
                      (into-array Float/TYPE vertices))
-        index-buffer (MemoryUtil/memAllocInt (count indices))
+        index-buffer (memAllocInt (count indices))
         index-array (if (int-array? indices)
                       indices
                       (into-array Integer/TYPE indices))
-        color-buffer (MemoryUtil/memAllocFloat (count colors))
+        color-buffer (memAllocFloat (count colors))
         color-array (if (float-array? colors)
                       colors
                       (into-array Float/TYPE colors))
-        vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
-        index-vbo (GL15/glGenBuffers)
-        color-vbo (GL15/glGenBuffers)]
+        vao (glGenVertexArrays)
+        vbo (glGenBuffers)
+        index-vbo (glGenBuffers)
+        color-vbo (glGenBuffers)]
     (with-dispose :memory vert-buffer
       (with-dispose :memory index-buffer
         (with-dispose :memory color-buffer
@@ -60,21 +69,21 @@
           (.. index-buffer (put index-array) (flip))
           (.. color-buffer (put color-array) (flip))
 
-          (GL30/glBindVertexArray vao)
+          (glBindVertexArray vao)
 
-          (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-          (GL15/glBufferData GL15/GL_ARRAY_BUFFER vert-buffer GL15/GL_STATIC_DRAW)
-          (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false 0 0)
+          (glBindBuffer GL_ARRAY_BUFFER vbo)
+          (glBufferData GL_ARRAY_BUFFER vert-buffer GL_STATIC_DRAW)
+          (glVertexAttribPointer 0 3 GL_FLOAT false 0 0)
 
-          (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER color-vbo)
-          (GL15/glBufferData GL15/GL_ARRAY_BUFFER color-buffer GL15/GL_STATIC_DRAW)
-          (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false 0 0)
+          (glBindBuffer GL_ARRAY_BUFFER color-vbo)
+          (glBufferData GL_ARRAY_BUFFER color-buffer GL_STATIC_DRAW)
+          (glVertexAttribPointer 1 3 GL_FLOAT false 0 0)
 
-          (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER index-vbo)
-          (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER index-buffer GL15/GL_STATIC_DRAW)
+          (glBindBuffer GL_ELEMENT_ARRAY_BUFFER index-vbo)
+          (glBufferData GL_ELEMENT_ARRAY_BUFFER index-buffer GL_STATIC_DRAW)
 
-          (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER 0)
-          (GL30/glBindVertexArray 0))))
+          (glBindBuffer GL_ARRAY_BUFFER 0)
+          (glBindVertexArray 0))))
     {:vbo vbo :vao vao :vertex-count vert-count :index-vbo index-vbo :index-count (count indices)
      :color-vbo color-vbo}))
 (s/fdef create-mesh
@@ -83,13 +92,13 @@
 
 (defn dispose-mesh
   [mesh]
-  (GL20/glDisableVertexAttribArray 0)
-  (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER 0)
-  (GL15/glDeleteBuffers (:color-vbo mesh))
-  (GL15/glDeleteBuffers (:vbo mesh))
-  (GL15/glDeleteBuffers (:index-vbo mesh))
-  (GL30/glBindVertexArray 0)
-  (GL30/glDeleteVertexArrays (:vao mesh))
+  (glDisableVertexAttribArray 0)
+  (glBindBuffer GL_ARRAY_BUFFER 0)
+  (glDeleteBuffers (:color-vbo mesh))
+  (glDeleteBuffers (:vbo mesh))
+  (glDeleteBuffers (:index-vbo mesh))
+  (glBindVertexArray 0)
+  (glDeleteVertexArrays (:vao mesh))
   nil)
 (s/fdef dispose-mesh
         :args (s/cat :mesh ::mesh)
@@ -101,10 +110,10 @@
 
 (defn render-mesh
   [mesh]
-  (GL30/glBindVertexArray (:vao mesh))
-  (GL20/glEnableVertexAttribArray 0)
-  (GL20/glEnableVertexAttribArray 1)
-  (GL11/glDrawElements GL11/GL_TRIANGLES (:index-count mesh) GL11/GL_UNSIGNED_INT 0)
-  (GL20/glDisableVertexAttribArray 0)
-  (GL20/glDisableVertexAttribArray 1)
-  (GL30/glBindVertexArray 0))
+  (glBindVertexArray (:vao mesh))
+  (glEnableVertexAttribArray 0)
+  (glEnableVertexAttribArray 1)
+  (glDrawElements GL_TRIANGLES (:index-count mesh) GL_UNSIGNED_INT 0)
+  (glDisableVertexAttribArray 0)
+  (glDisableVertexAttribArray 1)
+  (glBindVertexArray 0))

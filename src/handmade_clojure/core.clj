@@ -10,11 +10,12 @@
                                              x-rotation-matrix y-rotation-matrix z-rotation-matrix]]
             [clojure.core.matrix :refer [mmul inverse]]
             [clojure.java.io :as io]
-            [clojure.core.async :as a :refer [go]])
-  (:import [org.lwjgl.opengl GL GL11 GL15 GL20 GL30]
-           [org.lwjgl.system MemoryStack MemoryUtil]
-           [org.lwjgl BufferUtils])
+            [clojure.core.async :as a :refer [go]]
+            [org.suskeyhose.imports :refer [import-static-all]])
   (:gen-class))
+
+(import-static-all org.lwjgl.glfw.GLFW
+                   org.lwjgl.opengl.GL11)
 
 ;; Basic structure of the game:
 ;; Init
@@ -24,8 +25,8 @@
   ;; Render
 ;; Cleanup
 
-(def vertex-shader-source (slurp (io/resource "shaders/vertex.vs")))
-(def fragment-shader-source (slurp (io/resource "shaders/fragment.fs")))
+(def vertex-shader-source (slurp (io/resource "shaders/vertex.glsl")))
+(def fragment-shader-source (slurp (io/resource "shaders/fragment.glsl")))
 
 (defn -main
   []
@@ -46,6 +47,14 @@
       (init-opengl 0 0 0 1)
 
       (set-callback @window :framebuffer-size-callback resize-callback)
+      (set-callback @window :key-callback (fn [window key scancode action mods]
+                                            (when (= key GLFW_KEY_ESCAPE)
+                                              (glfwSetWindowShouldClose window true))
+                                            (println (char key))
+                                            (println (cond (= action GLFW_PRESS) :key-down
+                                                           (= action GLFW_REPEAT) :key-repeat
+                                                           (= action GLFW_RELEASE) :key-up
+                                                           :default :key-error))))
 
       ;; Init the shaders and stuff
       (let [vert-shader (create-shader :vertex-shader vertex-shader-source)
@@ -74,7 +83,7 @@
               ;; Main loop
               (while (not (should-close? @window))
                 (when @resized?
-                  (GL11/glViewport 0 0 @width @height)
+                  (glViewport 0 0 @width @height)
                   (reset! aspect (/ @width @height))
                   (reset! proj-mat (projection-matrix 90 @aspect 0.01 1000))
                   (reset! resized? false))
