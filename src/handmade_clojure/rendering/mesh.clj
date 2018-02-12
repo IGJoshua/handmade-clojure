@@ -9,6 +9,7 @@
 
 (import-static-all org.lwjgl.opengl.GL
                    org.lwjgl.opengl.GL11
+                   org.lwjgl.opengl.GL13
                    org.lwjgl.opengl.GL15
                    org.lwjgl.opengl.GL20
                    org.lwjgl.opengl.GL30
@@ -18,7 +19,7 @@
 (s/def ::vao int?)
 (s/def ::vbo int?)
 (s/def ::index-vbo int?)
-(s/def ::color-vbo int?)
+(s/def ::uv-vbo int?)
 (s/def ::vertex-count pos-int?)
 
 (def ^:private int-array-type (Class/forName "[I"))
@@ -27,8 +28,7 @@
   (instance? int-array-type a))
 
 (s/def ::index-array int-array?)
-(s/def ::mesh (s/keys :req-un [::vbo ::index-vbo ::vao ::vertex-count ::index-count
-                               ::color-vbo]))
+(s/def ::mesh (s/keys :req-un [::vbo ::index-vbo ::vao ::vertex-count ::index-count ::uv-vbo]))
 
 (s/def ::vertex (s/coll-of float?))
 (s/def ::vertices (s/coll-of ::vertex))
@@ -39,35 +39,35 @@
   (instance? float-array-type a))
 
 (defmethod dispose :memory
-  [_ m]
+  [_ ^java.nio.Buffer m]
   (when-not (nil? m)
     (memFree m)))
 
 (defn create-mesh
-  [vertices indices colors]
+  [vertices indices uvs]
   (let [vert-buffer (memAllocFloat (count vertices))
         vert-count (/ (count vertices) 3)
-        vert-array (if (float-array? vertices)
+        ^floats vert-array (if (float-array? vertices)
                      vertices
                      (into-array Float/TYPE vertices))
         index-buffer (memAllocInt (count indices))
-        index-array (if (int-array? indices)
+        ^ints index-array (if (int-array? indices)
                       indices
                       (into-array Integer/TYPE indices))
-        color-buffer (memAllocFloat (count colors))
-        color-array (if (float-array? colors)
-                      colors
-                      (into-array Float/TYPE colors))
+        uv-buffer (memAllocFloat (count uvs))
+        ^floats uv-array (if (float-array? uvs)
+                   uvs
+                   (into-array Float/TYPE uvs))
         vao (glGenVertexArrays)
         vbo (glGenBuffers)
         index-vbo (glGenBuffers)
-        color-vbo (glGenBuffers)]
+        uv-vbo (glGenBuffers)]
     (with-dispose :memory vert-buffer
       (with-dispose :memory index-buffer
-        (with-dispose :memory color-buffer
+        (with-dispose :memory uv-buffer
           (.. vert-buffer (put vert-array) (flip))
           (.. index-buffer (put index-array) (flip))
-          (.. color-buffer (put color-array) (flip))
+          (.. uv-buffer (put uv-array) (flip))
 
           (glBindVertexArray vao)
 
@@ -75,17 +75,17 @@
           (glBufferData GL_ARRAY_BUFFER vert-buffer GL_STATIC_DRAW)
           (glVertexAttribPointer 0 3 GL_FLOAT false 0 0)
 
-          (glBindBuffer GL_ARRAY_BUFFER color-vbo)
-          (glBufferData GL_ARRAY_BUFFER color-buffer GL_STATIC_DRAW)
-          (glVertexAttribPointer 1 3 GL_FLOAT false 0 0)
+          (glBindBuffer GL_ARRAY_BUFFER uv-vbo)
+          (glBufferData GL_ARRAY_BUFFER uv-buffer GL_STATIC_DRAW)
+          (glVertexAttribPointer 1 2 GL_FLOAT false 0 0)
 
           (glBindBuffer GL_ELEMENT_ARRAY_BUFFER index-vbo)
           (glBufferData GL_ELEMENT_ARRAY_BUFFER index-buffer GL_STATIC_DRAW)
 
           (glBindBuffer GL_ARRAY_BUFFER 0)
           (glBindVertexArray 0))))
-    {:vbo vbo :vao vao :vertex-count vert-count :index-vbo index-vbo :index-count (count indices)
-     :color-vbo color-vbo}))
+    {:vbo vbo :vao vao :vertex-count vert-count :index-vbo index-vbo
+     :index-count (count indices) :uv-vbo uv-vbo}))
 (s/fdef create-mesh
         :args (s/cat :vertices ::vertices)
         :ret ::mesh)
@@ -94,11 +94,11 @@
   [mesh]
   (glDisableVertexAttribArray 0)
   (glBindBuffer GL_ARRAY_BUFFER 0)
-  (glDeleteBuffers (:color-vbo mesh))
-  (glDeleteBuffers (:vbo mesh))
-  (glDeleteBuffers (:index-vbo mesh))
+  (glDeleteBuffers ^long (:vbo mesh))
+  (glDeleteBuffers ^long (:uv-vbo mesh))
+  (glDeleteBuffers ^long (:index-vbo mesh))
   (glBindVertexArray 0)
-  (glDeleteVertexArrays (:vao mesh))
+  (glDeleteVertexArrays ^long (:vao mesh))
   nil)
 (s/fdef dispose-mesh
         :args (s/cat :mesh ::mesh)
@@ -109,7 +109,9 @@
   (dispose-mesh mesh))
 
 (defn render-mesh
-  [mesh]
+  [mesh texture-id]
+  (glActiveTexture GL_TEXTURE0)
+  (glBindTexture GL_TEXTURE_2D texture-id)
   (glBindVertexArray (:vao mesh))
   (glEnableVertexAttribArray 0)
   (glEnableVertexAttribArray 1)

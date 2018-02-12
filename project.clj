@@ -79,10 +79,11 @@
      [com.rpl/specter "1.1.0"]
      [net.mikera/core.matrix "0.61.0"]
      [net.mikera/vectorz-clj "0.47.0"]
-     [org.suskeyhose/imports "1.5.0-SNAPSHOT"]]
+     [org.suskeyhose/imports "1.5.0-SNAPSHOT"]
+     [org.l33tlabs.twl/pngdecoder "1.0"]]
    (lwjgl-deps-with-natives)))
 
-(defproject handmade-clojure "0.1.0"
+(defproject handmade-clojure "0.1.0-SNAPSHOT"
   :description "Simple game in clojure"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

@@ -28,11 +28,11 @@
   (glClear (bit-or GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT)))
 
 (defn create-shader
-  [shader-type shader-source]
+  [shader-type ^String shader-source]
   (let [shader (glCreateShader (case shader-type
-                                      :vertex-shader GL_VERTEX_SHADER
-                                      :fragment-shader GL_FRAGMENT_SHADER
-                                      shader-type))]
+                                 :vertex-shader GL_VERTEX_SHADER
+                                 :fragment-shader GL_FRAGMENT_SHADER
+                                 shader-type))]
     (when (= shader 0)
       (throw (RuntimeException. (str "Unable to create shader of type: " shader-type))))
     (glShaderSource shader shader-source)
@@ -82,13 +82,17 @@
   (dispose-program program))
 
 (defn get-uniform
-  [program name]
+  [^long program ^String name]
   (let [uniform (glGetUniformLocation program name)]
     (when (< uniform 0)
       (throw (RuntimeException. (str "Unable to find uniform: " name))))
     uniform))
 
 (defn set-matrix-uniform
-  [uniform mat]
-  (let [mat-array (into-array Float/TYPE (m/to-vector mat))]
+  [^long uniform mat]
+  (let [^floats mat-array (into-array Float/TYPE (m/to-vector mat))]
    (glUniformMatrix4fv uniform false mat-array)))
+
+(defn set-int-uniform
+  [uniform i]
+  (glUniform1i uniform i))
