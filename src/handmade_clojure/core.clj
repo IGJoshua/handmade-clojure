@@ -32,90 +32,135 @@
   ;; Render
 ;; Cleanup
 
+(def game-state (atom {:position [0 0 0]
+                       :camera {:position [0 0 0]
+                                :pitch 0
+                                :yaw 0}
+                       :input {:movement [0 0]
+                               :look [0 0]
+                               :actions #{}}}))
+
+(defmacro press-release [action on-press on-release]
+  `(if (= ~action GLFW_PRESS)
+     ~on-press
+     (if (= ~action GLFW_RELEASE)
+       ~on-release
+       identity)))
+
+(defmacro input-add []
+  '(press-release
+    action
+    #(+ % 1)
+    #(- % 1)))
+
+(defmacro input-sub []
+  '(press-release
+    action
+    #(- % 1)
+    #(+ % 1)))
+
+(defn key-callback
+  [window key scancode action mods]
+  (case-cond
+   key
+   GLFW_KEY_ESCAPE (glfwSetWindowShouldClose window true)
+   GLFW_KEY_A (s/transform [s/ATOM :input :movement 0] (input-sub) game-state)
+   GLFW_KEY_D (s/transform [s/ATOM :input :movement 0] (input-add) game-state)
+   GLFW_KEY_W (s/transform [s/ATOM :input :movement 1] (input-sub) game-state)
+   GLFW_KEY_S (s/transform [s/ATOM :input :movement 1] (input-add) game-state)
+   GLFW_KEY_SPACE (s/transform [s/ATOM :input :actions] (press-release
+                                                         action
+                                                         #(conj % :jump)
+                                                         #(disj % :jump))
+                               game-state)
+   GLFW_KEY_LEFT_SHIFT (s/transform [s/ATOM :input :actions] (press-release
+                                                              action
+                                                              #(conj % :crouch)
+                                                              #(disj % :crouch))
+                                    game-state)
+   GLFW_KEY_LEFT (s/transform [s/ATOM :input :look 0] (input-sub) game-state)
+   GLFW_KEY_RIGHT (s/transform [s/ATOM :input :look 0] (input-add) game-state)
+   GLFW_KEY_UP (s/transform [s/ATOM :input :look 1] (input-sub) game-state)
+   GLFW_KEY_DOWN (s/transform [s/ATOM :input :look 1] (input-add) game-state))
+  (if (#{GLFW_PRESS GLFW_RELEASE} action) (println (:input @game-state))))
+
+(def width (atom 640))
+(def height (atom 480))
+(def resized? (atom false))
+
+(defn resize-callback
+  [window w h]
+  (reset! width w)
+  (reset! height h)
+  (reset! resized? true)
+  nil)
+
 (defn -main
   []
-  (let [width (atom 640)
-        height (atom 480)
-        resized? (atom false)
-        title "Hello World!"
-        window (atom nil)
-        resize-callback (fn [window w h]
-                          (reset! width w)
-                          (reset! height h)
-                          (reset! resized? true)
-                          nil)
-        game-state (atom {:position [0 0 0]})
-        vertex-shader-source (slurp (io/resource "shader/vertex.glsl"))
-        fragment-shader-source (slurp (io/resource "shader/fragment.glsl"))]
-    ;; Initialization
-    (with-dispose :window @window
-      ;; Create window and init OpenGL
-      (reset! window (init-window @width @height title))
-      (init-opengl 0 0 0 1)
+  (go
+    (let [title "Hello World!"
+          window (atom nil)
+          vertex-shader-source (slurp (io/resource "shader/vertex.glsl"))
+          fragment-shader-source (slurp (io/resource "shader/fragment.glsl"))]
+      ;; Initialization
+      (with-dispose :window @window
+        ;; Create window and init OpenGL
+        (reset! window (init-window @width @height title))
+        (init-opengl 0 0 0 1)
 
-      (set-callback @window :framebuffer-size-callback resize-callback)
-      (set-callback @window :key-callback (fn [window key scancode action mods]
-                                            (if (or (= action GLFW_PRESS) (= action GLFW_REPEAT))
-                                              (case-cond
-                                               key
-                                               GLFW_KEY_ESCAPE (glfwSetWindowShouldClose window true)
-                                               GLFW_KEY_LEFT (s/transform [s/ATOM :position 0] #(- % 0.1)
-                                                                          game-state)
-                                               GLFW_KEY_RIGHT (s/transform [s/ATOM :position 0] #(+ 0.1 %)
-                                                                           game-state)
-                                               GLFW_KEY_UP (s/transform [s/ATOM :position 1] #(+ 0.1 %)
-                                                                        game-state)
-                                               GLFW_KEY_DOWN (s/transform [s/ATOM :position 1] #(- % 0.1)
-                                                                          game-state)))))
-      ;; Init the shaders and stuff
-      (let [vert-shader (create-shader :vertex-shader vertex-shader-source)
-            fragment-shader (create-shader :fragment-shader fragment-shader-source)
-            shader-program (create-shader-program [vert-shader fragment-shader])]
-        (with-dispose :shader-program shader-program
-          ;; Define the geometry
-          (let [cube (create-cube)
-                aspect (atom (/ @width @height))
-                proj-uniform (get-uniform shader-program "projectionMatrix")
-                view-uniform (get-uniform shader-program "viewMatrix")
-                world-uniform (get-uniform shader-program "worldMatrix")
-                texture-uniform (get-uniform shader-program "texture_sampler")
-                texture-id (glGenTextures)]
-            (with-dispose :texture texture-id
-              (if-let [[^java.nio.DirectByteBuffer texture-bytes ^long width ^long height] (load-texture "resources/texture/dirt.png")]
-                (do (glBindTexture GL_TEXTURE_2D texture-id)
-                    (glPixelStorei GL_UNPACK_ALIGNMENT 1)
-                    #_(glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST)
-                    #_(glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST)
-                    (glTexImage2D GL_TEXTURE_2D
-                                  0 GL_RGBA width height
-                                  0 GL_RGBA GL_UNSIGNED_BYTE texture-bytes)
-                    (glGenerateMipmap GL_TEXTURE_2D))
-                (throw (Exception. "Unable to get texture")))
-              (with-dispose :mesh cube
-                ;; Main loop
-                (while (not (should-close? @window))
-                  (when @resized?
-                    (glViewport 0 0 @width @height)
-                    (reset! aspect (/ @width @height))
-                    (reset! resized? false))
-                  ;; Clear screen
-                  (clear-screen)
+        (set-callback @window :framebuffer-size-callback (fn [& args] (eval `(resize-callback ~@args))))
+        (set-callback @window :key-callback (fn [& args] (eval `(key-callback ~@args))))
+        ;; Init the shaders and stuff
+        (let [vert-shader (create-shader :vertex-shader vertex-shader-source)
+              fragment-shader (create-shader :fragment-shader fragment-shader-source)
+              shader-program (create-shader-program [vert-shader fragment-shader])]
+          (with-dispose :shader-program shader-program
+            ;; Define the geometry
+            (let [cube (create-cube)
+                  aspect (atom (/ @width @height))
+                  proj-uniform (get-uniform shader-program "projectionMatrix")
+                  view-uniform (get-uniform shader-program "viewMatrix")
+                  world-uniform (get-uniform shader-program "worldMatrix")
+                  texture-uniform (get-uniform shader-program "texture_sampler")
+                  texture-id (glGenTextures)]
+              (with-dispose :texture texture-id
+                (if-let [[^java.nio.DirectByteBuffer texture-bytes ^long width ^long height]
+                         (load-texture "texture/dirt.png")]
+                  (do (glBindTexture GL_TEXTURE_2D texture-id)
+                      (glPixelStorei GL_UNPACK_ALIGNMENT 1)
+                      #_(glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MIN_FILTER GL_NEAREST)
+                      #_(glTexParameteri GL_TEXTURE_2D GL_TEXTURE_MAG_FILTER GL_NEAREST)
+                      (glTexImage2D GL_TEXTURE_2D
+                                    0 GL_RGBA width height
+                                    0 GL_RGBA GL_UNSIGNED_BYTE texture-bytes)
+                      (glGenerateMipmap GL_TEXTURE_2D))
+                  (throw (Exception. "Unable to get texture")))
+                (with-dispose :mesh cube
+                  ;; Main loop
+                  (while (not (should-close? @window))
+                    (when @resized?
+                      (glViewport 0 0 @width @height)
+                      (reset! aspect (/ @width @height))
+                      (reset! resized? false))
+                    ;; Clear screen
+                    (clear-screen)
 
-                  (let [proj-mat (projection-matrix 90 @aspect 0.10 1000)
-                        camera-mat (translation-matrix 0 0 2)
-                        world-mat (apply translation-matrix (s/select-first [s/ATOM :position] game-state))]
-                    ;; Draw items to the screen
-                    (bind-program shader-program)
+                    (let [proj-mat (projection-matrix 90 @aspect 0.10 1000)
+                          camera-mat (translation-matrix 0 0 2)
+                          world-mat (apply translation-matrix (s/select-first [s/ATOM :position] game-state))]
+                      ;; Draw items to the screen
+                      (bind-program shader-program)
 
-                    (set-matrix-uniform proj-uniform proj-mat)
-                    (set-matrix-uniform view-uniform (inverse camera-mat))
-                    (set-matrix-uniform world-uniform world-mat)
-                    (set-int-uniform texture-uniform 0)
+                      (set-matrix-uniform proj-uniform proj-mat)
+                      (set-matrix-uniform view-uniform (inverse camera-mat))
+                      (set-matrix-uniform world-uniform world-mat)
+                      (set-int-uniform texture-uniform 0)
 
-                    (render-mesh cube texture-id)
+                      (render-mesh cube texture-id)
 
-                    (bind-program nil)
+                      (bind-program nil)
 
-                    ;; Flip buffer
-                    (swap-window @window)
-                    (poll-events)))))))))))
+                      ;; Flip buffer
+                      (swap-window @window)
+                      (poll-events)))))))))))
+  nil)
