@@ -62,7 +62,7 @@
     (throw (IllegalArgumentException. "Invalid callback passed to GLFW."))))
 
 (defn init-window
-  [width height title]
+  [^long width ^long height ^String title]
   (glfwSetErrorCallback (createPrint System/err))
 
   (if-not (glfwInit)
