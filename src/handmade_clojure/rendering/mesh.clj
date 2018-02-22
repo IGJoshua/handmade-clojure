@@ -88,23 +88,15 @@
         :args (s/cat :vertices ::vertices)
         :ret ::mesh)
 
-(defn dispose-mesh
-  [mesh]
+(defmethod dispose :mesh
+  [_ mesh]
   (glDisableVertexAttribArray 0)
   (glBindBuffer GL_ARRAY_BUFFER 0)
   (glDeleteBuffers ^long (:vbo mesh))
   (glDeleteBuffers ^long (:uv-vbo mesh))
   (glDeleteBuffers ^long (:index-vbo mesh))
   (glBindVertexArray 0)
-  (glDeleteVertexArrays ^long (:vao mesh))
-  nil)
-(s/fdef dispose-mesh
-        :args (s/cat :mesh ::mesh)
-        :ret nil?)
-
-(defmethod dispose :mesh
-  [_ mesh]
-  (dispose-mesh mesh))
+  (glDeleteVertexArrays ^long (:vao mesh)))
 
 (defn render-mesh
   [mesh texture-id]
