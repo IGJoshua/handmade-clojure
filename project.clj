@@ -2,7 +2,7 @@
 
 ;; per-os jvm-opts code cribbed from Overtone
 (def JVM-OPTS
-  {:common   []
+  {:common   ["-Dclojure.compiler.direct-linking=true"]
    :macosx   ["-XstartOnFirstThread" "-Djava.awt.headless=true"]
    :linux    []
    :windows  []})
