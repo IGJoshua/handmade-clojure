@@ -7,7 +7,10 @@
   (throw (RuntimeException. (str "No implementation of dispose on type " t))))
 
 (defmacro with-dispose [t v & forms]
-  `(try
-     ~@forms
-     (finally
-       (dispose ~t ~v))))
+  (let [v (if (vector? v)
+            v
+            (vector v))]
+    `(try
+       ~@forms
+       (finally
+         ~@(map (fn [item] `(dispose ~t ~item)) v)))))

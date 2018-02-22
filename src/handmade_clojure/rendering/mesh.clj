@@ -62,12 +62,10 @@
         vbo (glGenBuffers)
         index-vbo (glGenBuffers)
         uv-vbo (glGenBuffers)]
-    (with-dispose :memory vert-buffer
-      (with-dispose :memory index-buffer
-        (with-dispose :memory uv-buffer
-          (.. vert-buffer (put vert-array) (flip))
-          (.. index-buffer (put index-array) (flip))
-          (.. uv-buffer (put uv-array) (flip))
+    (with-dispose :memory [vert-buffer index-buffer uv-buffer]
+      (.. vert-buffer (put vert-array) (flip))
+      (.. index-buffer (put index-array) (flip))
+      (.. uv-buffer (put uv-array) (flip))
 
           (glBindVertexArray vao)
 
