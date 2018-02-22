@@ -22,7 +22,7 @@
 (s/def ::uv-vbo int?)
 (s/def ::vertex-count pos-int?)
 
-(def ^:private int-array-type (Class/forName "[I"))
+(def ^{:private true :const true} int-array-type (Class/forName "[I"))
 (defn ^:private int-array?
   [a]
   (instance? int-array-type a))
@@ -33,7 +33,7 @@
 (s/def ::vertex (s/coll-of float?))
 (s/def ::vertices (s/coll-of ::vertex))
 
-(def ^:private float-array-type (Class/forName "[F"))
+(def ^{:private true :const true} float-array-type (Class/forName "[F"))
 (defn ^:private float-array?
   [a]
   (instance? float-array-type a))
