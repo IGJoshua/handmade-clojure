@@ -2,7 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [org.suskeyhose.imports :refer [import-static-all import-static]]
-            [handmade-clojure.resource :refer [dispose]])
+            [handmade-clojure.resource :refer [with-dispose dispose]])
   (:import [de.matthiasmann.twl.utils PNGDecoder PNGDecoder$Format]))
 
 (import-static-all org.lwjgl.BufferUtils)
@@ -13,7 +13,7 @@
 
 (defmethod load-texture "png"
   [path]
-  (let [in (io/input-stream path)
+  (let [in (io/input-stream (io/resource path))
         result (atom nil)]
     (try
       (let [decoder (PNGDecoder. in)
