@@ -48,16 +48,16 @@
   (let [vert-buffer (memAllocFloat (count vertices))
         vert-count (/ (count vertices) 3)
         ^floats vert-array (if (float-array? vertices)
-                     vertices
-                     (into-array Float/TYPE vertices))
+                             vertices
+                             (into-array Float/TYPE vertices))
         index-buffer (memAllocInt (count indices))
         ^ints index-array (if (int-array? indices)
-                      indices
-                      (into-array Integer/TYPE indices))
+                            indices
+                            (into-array Integer/TYPE indices))
         uv-buffer (memAllocFloat (count uvs))
         ^floats uv-array (if (float-array? uvs)
-                   uvs
-                   (into-array Float/TYPE uvs))
+                           uvs
+                           (into-array Float/TYPE uvs))
         vao (glGenVertexArrays)
         vbo (glGenBuffers)
         index-vbo (glGenBuffers)
