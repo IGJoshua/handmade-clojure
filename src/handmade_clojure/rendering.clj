@@ -7,17 +7,18 @@
                    org.lwjgl.opengl.GL11
                    org.lwjgl.opengl.GL15
                    org.lwjgl.opengl.GL20
-                   org.lwjgl.opengl.GL30
-                   org.lwjgl.system.MemoryStack
-                   org.lwjgl.system.MemoryUtil
-                   org.lwjgl.BufferUtils)
+                   org.lwjgl.opengl.GL30)
 
 (m/set-current-implementation :vectorz)
 
 (defn init-opengl
   [red green blue alpha]
   (createCapabilities)
-  (glClearColor red green blue alpha))
+  (glClearColor red green blue alpha)
+  (glEnable GL_DEPTH_TEST)
+  (glEnable GL_CULL_FACE)
+  (glCullFace GL_BACK)
+  (glFrontFace GL_CCW))
 
 (defn set-clear-color
   [red green blue alpha]

@@ -53,11 +53,6 @@
       (reset! window (init-window @width @height title))
       (init-opengl 0 0 0 1)
 
-      (glEnable GL_DEPTH_TEST)
-      (glEnable GL_CULL_FACE)
-      (glCullFace GL_BACK)
-      (glFrontFace GL_CCW)
-
       (set-callback @window :framebuffer-size-callback resize-callback)
       (set-callback @window :key-callback (fn [window key scancode action mods]
                                             (if (or (= action GLFW_PRESS) (= action GLFW_REPEAT))
