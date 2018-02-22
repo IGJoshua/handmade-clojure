@@ -93,18 +93,14 @@
 
     window-id))
 
-(defn dispose-window
-  [window-id]
+(defmethod dispose :window
+  [_ window-id]
   (try (with-valid-window window-id "free callbacks and destroy window"
          (glfwFreeCallbacks window-id)
          (glfwDestroyWindow window-id))
        (catch Exception e nil))
   (glfwTerminate)
   (.free (glfwSetErrorCallback nil)))
-
-(defmethod dispose :window
-  [_ window-id]
-  (dispose-window window-id))
 
 (defn swap-window
   [window-id]

@@ -43,14 +43,10 @@
                                      (glGetShaderInfoLog shader)))))
     shader))
 
-(defn dispose-shader
-  [program shader]
-  (when-not (= shader 0)
-    (glDetachShader program shader)))
-
 (defmethod dispose :shader
   [_ [program shader]]
-  (dispose-shader program shader))
+  (when-not (= shader 0)
+    (glDetachShader program shader)))
 
 (defn create-shader-program
   [shaders]
@@ -62,7 +58,7 @@
       (throw (RuntimeException. (str "Unable to link the shader program.\n"
                                      (glGetProgramInfoLog program)))))
     (doseq [shader shaders]
-      (dispose-shader program shader))
+      (dispose :shader [program shader]))
     (glValidateProgram program)
     (when (= (glGetProgrami program GL_VALIDATE_STATUS) 0)
       (binding [*out* *err*]
@@ -74,13 +70,9 @@
   [program]
   (glUseProgram (if program program 0)))
 
-(defn dispose-program
-  [program]
-  (glDeleteProgram program))
-
 (defmethod dispose :shader-program
   [_ program]
-  (dispose-program program))
+  (glDeleteProgram program))
 
 (defn get-uniform
   [^long program ^String name]
