@@ -67,21 +67,21 @@
       (.. index-buffer (put index-array) (flip))
       (.. uv-buffer (put uv-array) (flip))
 
-          (glBindVertexArray vao)
+      (glBindVertexArray vao)
 
-          (glBindBuffer GL_ARRAY_BUFFER vbo)
-          (glBufferData GL_ARRAY_BUFFER vert-buffer GL_STATIC_DRAW)
-          (glVertexAttribPointer 0 3 GL_FLOAT false 0 0)
+      (glBindBuffer GL_ARRAY_BUFFER vbo)
+      (glBufferData GL_ARRAY_BUFFER vert-buffer GL_STATIC_DRAW)
+      (glVertexAttribPointer 0 3 GL_FLOAT false 0 0)
 
-          (glBindBuffer GL_ARRAY_BUFFER uv-vbo)
-          (glBufferData GL_ARRAY_BUFFER uv-buffer GL_STATIC_DRAW)
-          (glVertexAttribPointer 1 2 GL_FLOAT false 0 0)
+      (glBindBuffer GL_ARRAY_BUFFER uv-vbo)
+      (glBufferData GL_ARRAY_BUFFER uv-buffer GL_STATIC_DRAW)
+      (glVertexAttribPointer 1 2 GL_FLOAT false 0 0)
 
-          (glBindBuffer GL_ELEMENT_ARRAY_BUFFER index-vbo)
-          (glBufferData GL_ELEMENT_ARRAY_BUFFER index-buffer GL_STATIC_DRAW)
+      (glBindBuffer GL_ELEMENT_ARRAY_BUFFER index-vbo)
+      (glBufferData GL_ELEMENT_ARRAY_BUFFER index-buffer GL_STATIC_DRAW)
 
-          (glBindBuffer GL_ARRAY_BUFFER 0)
-          (glBindVertexArray 0))))
+      (glBindBuffer GL_ARRAY_BUFFER 0)
+      (glBindVertexArray 0))
     {:vbo vbo :vao vao :vertex-count vert-count :index-vbo index-vbo
      :index-count (count indices) :uv-vbo uv-vbo}))
 (s/fdef create-mesh
