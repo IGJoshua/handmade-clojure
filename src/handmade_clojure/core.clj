@@ -32,13 +32,27 @@
   ;; Render
 ;; Cleanup
 
-(def game-state (atom {:position [0 0 0]
-                       :camera {:position [0 0 0]
-                                :pitch 0
-                                :yaw 0}
-                       :input {:movement [0 0]
+(defonce game-state (atom {:position [0 0 0]
+                           :camera {:position [0 0 2]
+                                    :look [0 0]
+                                    :projection {:fov 90
+                                                 :near 0.1
+                                                 :far 10000}}
+                           :input {:movement [0 0]
+                                   :look [0 0]
+                                   :actions #{}}}))
+
+(defn init-game-state
+  []
+  (reset! game-state {:position [0 0 0]
+                      :camera {:position [0 0 2]
                                :look [0 0]
-                               :actions #{}}}))
+                               :projection {:fov 90
+                                            :near 0.1
+                                            :far 10000}}
+                      :input {:movement [0 0]
+                              :look [0 0]
+                              :actions #{}}}))
 
 (defmacro press-release [action on-press on-release]
   `(if (= ~action GLFW_PRESS)
