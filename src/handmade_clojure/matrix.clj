@@ -28,9 +28,8 @@
              [0 0 0 1]])))
 
 (defn x-rotation-matrix
-  [degrees]
-  (let [rads (m/to-radians degrees)
-        s (m/sin rads)
+  [rads]
+  (let [s (m/sin rads)
         c (m/cos rads)]
     (m/transpose
      (m/array [[1 0 0 0]
@@ -39,9 +38,8 @@
                [0 0 0 1]]))))
 
 (defn y-rotation-matrix
-  [degrees]
-  (let [rads (m/to-radians degrees)
-        s (m/sin rads)
+  [rads]
+  (let [s (m/sin rads)
         c (m/cos rads)]
     (m/transpose
      (m/array [[c 0 s 0]
@@ -50,9 +48,8 @@
                [0 0 0 1]]))))
 
 (defn z-rotation-matrix
-  [degrees]
-  (let [rads (m/to-radians degrees)
-        s (m/sin rads)
+  [rads]
+  (let [s (m/sin rads)
         c (m/cos rads)]
     (m/transpose
      (m/array [[c (- 0 s) 0 0]

@@ -92,11 +92,11 @@
                                                               #(conj % :crouch)
                                                               #(disj % :crouch))
                                     game-state)
-   GLFW_KEY_LEFT (s/transform [s/ATOM :input :look 0] (input-sub) game-state)
-   GLFW_KEY_RIGHT (s/transform [s/ATOM :input :look 0] (input-add) game-state)
-   GLFW_KEY_UP (s/transform [s/ATOM :input :look 1] (input-sub) game-state)
-   GLFW_KEY_DOWN (s/transform [s/ATOM :input :look 1] (input-add) game-state))
-  (if (#{GLFW_PRESS GLFW_RELEASE} action) (println (:input @game-state))))
+   GLFW_KEY_LEFT (s/transform [s/ATOM :input :look 1] (input-add) game-state)
+   GLFW_KEY_RIGHT (s/transform [s/ATOM :input :look 1] (input-sub) game-state)
+   GLFW_KEY_UP (s/transform [s/ATOM :input :look 0] (input-add) game-state)
+   GLFW_KEY_DOWN (s/transform [s/ATOM :input :look 0] (input-sub) game-state))
+  #_(if (#{GLFW_PRESS GLFW_RELEASE} action) (println (:input @game-state))))
 
 (def width (atom 640))
 (def height (atom 480))
@@ -108,6 +108,30 @@
   (reset! height h)
   (reset! resized? true)
   nil)
+
+(defn move-camera
+  [input yaw pos]
+  (let [x (first (:movement input))
+        z (last (:movement input))]
+    [(+ (* 0.1 x (Math/cos yaw))
+        (* 0.1 z (Math/sin yaw))
+        (first pos))
+     (+ (* 0.1
+           (+ (if (contains? (:actions input) :jump) 1 0)
+              (if (contains? (:actions input) :crouch) -1 0)))
+        (nth pos 1))
+     (+ (* 0.1 z (Math/cos yaw))
+        (* -0.1 x (Math/sin yaw))
+        (last pos))]))
+
+(defn change-look-dir
+  [input look]
+  [(+ (* 0.05
+         (first (:look input)))
+      (first look))
+   (+ (* 0.05
+         (last (:look input)))
+      (last look))])
 
 (defn -main
   []
@@ -152,16 +176,38 @@
                 (with-dispose :mesh cube
                   ;; Main loop
                   (while (not (should-close? @window))
+                    ;; Handle input
                     (when @resized?
                       (glViewport 0 0 @width @height)
                       (reset! aspect (/ @width @height))
                       (reset! resized? false))
+
+                    (s/transform [s/ATOM (s/collect-one [:input]) :camera (s/collect-one [:look s/LAST]) :position]
+                                 move-camera
+                                 game-state)
+
+                    (s/transform [s/ATOM (s/collect-one [:input]) :camera :look]
+                                 change-look-dir
+                                 game-state)
+
                     ;; Clear screen
                     (clear-screen)
 
-                    (let [proj-mat (projection-matrix 90 @aspect 0.10 1000)
-                          camera-mat (translation-matrix 0 0 2)
-                          world-mat (apply translation-matrix (s/select-first [s/ATOM :position] game-state))]
+                    (let [proj-mat (projection-matrix
+                                    (s/select-first [s/ATOM :camera :projection :fov] game-state)
+                                    @aspect
+                                    (s/select-first [s/ATOM :camera :projection :near] game-state)
+                                    (s/select-first [s/ATOM :camera :projection :far] game-state))
+                          camera-mat (mmul
+                                      (mmul
+                                       (x-rotation-matrix
+                                        (s/select-first [s/ATOM :camera :look s/FIRST] game-state))
+                                       (y-rotation-matrix
+                                        (s/select-first [s/ATOM :camera :look s/LAST] game-state)))
+                                      (apply translation-matrix
+                                             (s/select-first [s/ATOM :camera :position] game-state)))
+                          world-mat (apply translation-matrix
+                                           (s/select-first [s/ATOM :position] game-state))]
                       ;; Draw items to the screen
                       (bind-program shader-program)
 
