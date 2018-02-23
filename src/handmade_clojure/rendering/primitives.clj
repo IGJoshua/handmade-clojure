@@ -55,5 +55,29 @@
                           0.0 0.0
                           0.0 1.0
                           1.0 0.0
-                          1.0 1.0])]    ; bottom face
-    (create-mesh vertices indices uvs)))
+                          1.0 1.0])     ; bottom face
+        normals (float-array [0 0 1
+                              0 0 1
+                              0 0 1
+                              0 0 1
+                              0 0 -1
+                              0 0 -1
+                              0 0 -1
+                              0 0 -1
+                              -1 0 0
+                              -1 0 0
+                              -1 0 0
+                              -1 0 0
+                              1 0 0
+                              1 0 0
+                              1 0 0
+                              1 0 0
+                              0 1 0
+                              0 1 0
+                              0 1 0
+                              0 1 0
+                              0 -1 0
+                              0 -1 0
+                              0 -1 0
+                              0 -1 0])]
+    (create-mesh vertices indices uvs normals)))

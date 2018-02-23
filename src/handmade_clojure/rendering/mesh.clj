@@ -1,7 +1,9 @@
 (ns handmade-clojure.rendering.mesh
   (:require [handmade-clojure.resource :refer [dispose with-dispose]]
             [clojure.spec.alpha :as s]
-            [org.suskeyhose.imports :refer [import-static-all]])
+            [org.suskeyhose.imports :refer [import-static-all]]
+            [clojure.java.io :as io]
+            [clojure.string :as str])
   (:import [org.lwjgl.opengl GL GL30 GL20 GL15 GL11]
            [java.nio FloatBuffer]
            [org.lwjgl.system MemoryUtil]
@@ -20,6 +22,7 @@
 (s/def ::vbo int?)
 (s/def ::index-vbo int?)
 (s/def ::uv-vbo int?)
+(s/def ::normal-vbo int?)
 (s/def ::vertex-count pos-int?)
 
 (def ^{:private true :const true} int-array-type (Class/forName "[I"))
@@ -28,7 +31,7 @@
   (instance? int-array-type a))
 
 (s/def ::index-array int-array?)
-(s/def ::mesh (s/keys :req-un [::vbo ::index-vbo ::vao ::vertex-count ::index-count ::uv-vbo]))
+(s/def ::mesh (s/keys :req-un [::vbo ::index-vbo ::vao ::vertex-count ::index-count ::uv-vbo ::normal-vbo]))
 
 (s/def ::vertex (s/coll-of float?))
 (s/def ::vertices (s/coll-of ::vertex))
@@ -44,7 +47,7 @@
     (memFree m)))
 
 (defn create-mesh
-  [vertices indices uvs]
+  [vertices indices uvs normals]
   (let [vert-buffer (memAllocFloat (count vertices))
         vert-count (/ (count vertices) 3)
         ^floats vert-array (if (float-array? vertices)
@@ -58,14 +61,20 @@
         ^floats uv-array (if (float-array? uvs)
                            uvs
                            (into-array Float/TYPE uvs))
+        normal-buffer (memAllocFloat (count normals))
+        ^floats normal-array (if (float-array? normals)
+                               normals
+                               (into-array Float/TYPE normals))
         vao (glGenVertexArrays)
         vbo (glGenBuffers)
         index-vbo (glGenBuffers)
-        uv-vbo (glGenBuffers)]
-    (with-dispose :memory [vert-buffer index-buffer uv-buffer]
+        uv-vbo (glGenBuffers)
+        normal-vbo (glGenBuffers)]
+    (with-dispose :memory [vert-buffer index-buffer uv-buffer normal-buffer]
       (.. vert-buffer (put vert-array) (flip))
       (.. index-buffer (put index-array) (flip))
       (.. uv-buffer (put uv-array) (flip))
+      (.. normal-buffer (put normal-array) (flip))
 
       (glBindVertexArray vao)
 
@@ -77,13 +86,17 @@
       (glBufferData GL_ARRAY_BUFFER uv-buffer GL_STATIC_DRAW)
       (glVertexAttribPointer 1 2 GL_FLOAT false 0 0)
 
+      (glBindBuffer GL_ARRAY_BUFFER normal-vbo)
+      (glBufferData GL_ARRAY_BUFFER normal-buffer GL_STATIC_DRAW)
+      (glVertexAttribPointer 2 3 GL_FLOAT false 0 0)
+
       (glBindBuffer GL_ELEMENT_ARRAY_BUFFER index-vbo)
       (glBufferData GL_ELEMENT_ARRAY_BUFFER index-buffer GL_STATIC_DRAW)
 
       (glBindBuffer GL_ARRAY_BUFFER 0)
       (glBindVertexArray 0))
     {:vbo vbo :vao vao :vertex-count vert-count :index-vbo index-vbo
-     :index-count (count indices) :uv-vbo uv-vbo}))
+     :index-count (count indices) :uv-vbo uv-vbo :normal-vbo normal-vbo}))
 (s/fdef create-mesh
         :args (s/cat :vertices ::vertices)
         :ret ::mesh)
@@ -105,7 +118,54 @@
   (glBindVertexArray (:vao mesh))
   (glEnableVertexAttribArray 0)
   (glEnableVertexAttribArray 1)
+  (glEnableVertexAttribArray 2)
   (glDrawElements GL_TRIANGLES (:index-count mesh) GL_UNSIGNED_INT 0)
   (glDisableVertexAttribArray 0)
   (glDisableVertexAttribArray 1)
-  (glBindVertexArray 0))
+  (glDisableVertexAttribArray 2)
+  (glBindTexture GL_TEXTURE_2D NULL)
+  (glBindVertexArray NULL))
+
+(defmulti load-mesh (fn [^String path] (.substring path (inc (str/last-index-of path ".")))))
+
+(defmethod load-mesh :default
+  [path]
+  (throw (Exception. (str "Invalid mesh type: " path))))
+
+(defn ^:private parse-face
+  [s]
+  )
+
+(defmethod load-mesh "obj"
+  [path]
+  (let [lines (str/split-lines (slurp (io/resource path)))
+        verts (atom [])
+        uvs (atom [])
+        normals (atom [])
+        faces (atom [])]
+    (loop [line (first lines)
+           lines (rest lines)]
+      (let [tokens (str/split line #"\s")
+            t (first tokens)
+            tokens (rest tokens)]
+        (case t
+          "v" (swap! verts
+                     #(apply conj %
+                             (for [i (range 0 3)]
+                               (Float/parseFloat (nth tokens i)))))
+          "vt" (swap! uvs
+                      #(apply conj %
+                              (for [i (range 0 2)]
+                                (Float/parseFloat (nth tokens i)))))
+          "vn" (swap! normals
+                      #(apply conj %
+                              (for [i (range 0 3)]
+                                (Float/parseFloat (nth tokens i)))))
+          "f" (swap! faces
+                     #(apply conj %
+                             (for [i (range 0 3)]
+                               (parse-face (nth tokens i)))))
+          nil))
+      (when (seq lines)
+        (recur (first lines) (rest lines))))
+    ))
