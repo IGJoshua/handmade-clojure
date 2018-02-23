@@ -11,6 +11,10 @@
 
 (defmulti load-texture (fn [^String path] (.substring path (inc (str/last-index-of path ".")))))
 
+(defmethod load-texture :default
+  [path]
+  (throw (Exception. (str "Invalid texture type: " path))))
+
 (defmethod load-texture "png"
   [path]
   (let [in (io/input-stream (io/resource path))
