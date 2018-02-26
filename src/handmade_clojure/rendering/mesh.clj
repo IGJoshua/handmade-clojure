@@ -1,5 +1,6 @@
 (ns handmade-clojure.rendering.mesh
   (:require [handmade-clojure.resource :refer [dispose with-dispose]]
+            [handmade-clojure.util :refer [int-array? float-array?]]
             [clojure.spec.alpha :as s]
             [org.suskeyhose.imports :refer [import-static-all]]
             [clojure.java.io :as io]
@@ -25,21 +26,11 @@
 (s/def ::normal-vbo int?)
 (s/def ::vertex-count pos-int?)
 
-(def ^{:private true :const true} int-array-type (Class/forName "[I"))
-(defn ^:private int-array?
-  [a]
-  (instance? int-array-type a))
-
 (s/def ::index-array int-array?)
 (s/def ::mesh (s/keys :req-un [::vbo ::index-vbo ::vao ::vertex-count ::index-count ::uv-vbo ::normal-vbo]))
 
 (s/def ::vertex (s/coll-of float?))
 (s/def ::vertices (s/coll-of ::vertex))
-
-(def ^{:private true :const true} float-array-type (Class/forName "[F"))
-(defn ^:private float-array?
-  [a]
-  (instance? float-array-type a))
 
 (defmethod dispose :memory
   [_ ^java.nio.Buffer m]

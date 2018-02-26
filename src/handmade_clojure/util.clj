@@ -19,3 +19,13 @@
    [e]
    (let [clauses (partition-all 2 clauses)]
      `(cond ~@(mapcat (partial apply create-cond-clause e) clauses)))))
+
+(def ^:const int-array-type (Class/forName "[I"))
+(defn int-array?
+  [a]
+  (instance? int-array-type a))
+
+(def ^:const float-array-type (Class/forName "[F"))
+(defn float-array?
+  [a]
+  (instance? float-array-type a))
