@@ -1,11 +1,11 @@
 (ns handmade-clojure.core
   (:require [handmade-clojure.window :refer [set-callback init-window swap-window
-                                             poll-events should-close?]]
+                                             poll-events should-close? show-window]]
             [handmade-clojure.rendering :refer [init-opengl set-clear-color clear-screen
                                                 create-shader create-shader-program
                                                 bind-program get-uniform set-matrix-uniform
-                                                set-int-uniform]]
-            [handmade-clojure.rendering.mesh :refer [create-mesh render-mesh]]
+                                                set-int-uniform set-vector-3-uniform set-float-uniform]]
+            [handmade-clojure.rendering.mesh :refer [create-mesh render-mesh load-mesh]]
             [handmade-clojure.texture :refer [load-texture]]
             [handmade-clojure.resource :refer [with-dispose]]
             [handmade-clojure.matrix :refer [projection-matrix identity-matrix translation-matrix
@@ -155,13 +155,25 @@
               shader-program (create-shader-program [vert-shader fragment-shader])]
           (with-dispose :shader-program shader-program
             ;; Define the geometry
-            (let [cube (create-cube)
+            (let [cube (load-mesh "mesh/cube.obj")
                   aspect (atom (/ @width @height))
                   proj-uniform (get-uniform shader-program "projectionMatrix")
                   view-uniform (get-uniform shader-program "viewMatrix")
                   world-uniform (get-uniform shader-program "worldMatrix")
-                  texture-uniform (get-uniform shader-program "texture_sampler")
+                  texture-uniform (get-uniform shader-program "textureSampler")
+                  camera-position-uniform (get-uniform shader-program "cameraPosition")
+                  ambient-light-color-uniform (get-uniform shader-program "ambientLight.color")
+                  ambient-light-intensity-uniform (get-uniform shader-program "ambientLight.intensity")
+                  directional-light-color-uniform (get-uniform shader-program "directionalLight.color")
+                  directional-light-intensity-uniform (get-uniform shader-program "directionalLight.intensity")
+                  directional-light-direction-uniform (get-uniform shader-program "directionalLight.direction")
                   texture-id (glGenTextures)]
+              ;; Set up constants for this
+              (set-vector-3-uniform ambient-light-color-uniform [1.0 1.0 1.0])
+              (set-float-uniform ambient-light-intensity-uniform 2)
+              (set-vector-3-uniform directional-light-color-uniform [1.0 1.0 1.0])
+              (set-float-uniform directional-light-intensity-uniform 1.0)
+              (set-vector-3-uniform directional-light-direction-uniform [1.0 1.0 1.0])
               (with-dispose :texture texture-id
                 (if-let [[^java.nio.DirectByteBuffer texture-bytes ^long width ^long height]
                          (load-texture "texture/dirt.png")]
@@ -183,7 +195,8 @@
                       (reset! aspect (/ @width @height))
                       (reset! resized? false))
 
-                    (s/transform [s/ATOM (s/collect-one [:input]) :camera (s/collect-one [:look s/LAST]) :position]
+                    (s/transform [s/ATOM (s/collect-one [:input]) :camera
+                                  (s/collect-one [:look s/LAST]) :position]
                                  move-camera
                                  game-state)
 
@@ -216,6 +229,8 @@
                       (set-matrix-uniform view-uniform (inverse camera-mat))
                       (set-matrix-uniform world-uniform world-mat)
                       (set-int-uniform texture-uniform 0)
+                      (set-vector-3-uniform camera-position-uniform
+                                            (s/select-first [s/ATOM :camera :position] game-state))
 
                       (render-mesh cube texture-id)
 

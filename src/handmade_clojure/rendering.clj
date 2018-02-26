@@ -1,5 +1,6 @@
 (ns handmade-clojure.rendering
   (:require [handmade-clojure.resource :refer [dispose]]
+            [handmade-clojure.util :refer [int-array? float-array?]]
             [clojure.core.matrix :as m]
             [org.suskeyhose.imports :refer [import-static-all]]))
 
@@ -87,5 +88,16 @@
    (glUniformMatrix4fv uniform false mat-array)))
 
 (defn set-int-uniform
-  [uniform i]
-  (glUniform1i uniform i))
+  [^long uniform i]
+  (glUniform1i uniform (int i)))
+
+(defn set-float-uniform
+  [^long uniform f]
+  (glUniform1f uniform (float f)))
+
+(defn set-vector-3-uniform
+  [^long uniform vec]
+  (let [^floats vec-array (if (float-array? vec)
+                            vec
+                            (into-array Float/TYPE vec))]
+    (glUniform3fv uniform vec-array)))
