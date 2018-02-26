@@ -89,9 +89,12 @@
     (glfwMakeContextCurrent window-id)
     (glfwSwapInterval 1)
     (glfwSetWindowSizeLimits window-id 400 300 GLFW_DONT_CARE GLFW_DONT_CARE)
-    (glfwShowWindow window-id)
 
     window-id))
+
+(defn show-window
+  [^long window-id]
+  (glfwShowWindow window-id))
 
 (defmethod dispose :window
   [_ window-id]

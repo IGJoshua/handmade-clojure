@@ -144,6 +144,7 @@
       (with-dispose :window @window
         ;; Create window and init OpenGL
         (reset! window (init-window @width @height title))
+        (show-window @window)
         (init-opengl 0 0 0 1)
 
         (set-callback @window :framebuffer-size-callback (fn [& args] (eval `(resize-callback ~@args))))
