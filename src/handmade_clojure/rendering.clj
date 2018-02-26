@@ -78,7 +78,7 @@
 (defn get-uniform
   [^long program ^String name]
   (let [uniform (glGetUniformLocation program name)]
-    (when (< uniform 0)
+    #_(when (< uniform 0)
       (throw (RuntimeException. (str "Unable to find uniform: " name))))
     uniform))
 
