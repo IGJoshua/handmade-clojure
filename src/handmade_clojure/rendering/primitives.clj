@@ -2,7 +2,7 @@
   (:require [handmade-clojure.rendering.mesh :refer [create-mesh]]))
 
 (defn create-cube []
-  (let [vertices (float-array [-0.5  0.5  0.5
+  (let [positions (float-array [-0.5  0.5  0.5
                                -0.5 -0.5  0.5
                                0.5 -0.5  0.5
                                0.5  0.5  0.5 ; front face
@@ -80,4 +80,4 @@
                               0 -1 0
                               0 -1 0
                               0 -1 0])]
-    (create-mesh vertices indices uvs normals)))
+    (create-mesh positions uvs normals indices)))
