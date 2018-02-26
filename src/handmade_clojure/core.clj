@@ -33,9 +33,9 @@
 ;; Cleanup
 
 (defonce game-state (atom {:position [0 0 0]
-                           :camera {:position [0 0 2]
+                           :camera {:position [0 0 4]
                                     :look [0 0]
-                                    :projection {:fov 90
+                                    :projection {:fov 60
                                                  :near 0.1
                                                  :far 10000}}
                            :input {:movement [0 0]
@@ -45,9 +45,9 @@
 (defn init-game-state
   []
   (reset! game-state {:position [0 0 0]
-                      :camera {:position [0 0 2]
+                      :camera {:position [0 0 4]
                                :look [0 0]
-                               :projection {:fov 90
+                               :projection {:fov 60
                                             :near 0.1
                                             :far 10000}}
                       :input {:movement [0 0]
